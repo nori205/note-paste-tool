@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>note貼り付け診断</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;background:#faf8f4;color:#2b2a28;
+    font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+    line-height:1.6;padding:16px 14px 64px;max-width:680px;margin:0 auto;
+  }
+  h1{font-size:17px;margin:0 0 4px}
+  .lead{font-size:12px;color:#8a847b;margin:0 0 18px}
+  .card{
+    border:1px solid #e4ded4;border-radius:12px;background:#fff;
+    padding:12px 14px;margin-bottom:12px;
+  }
+  .card h2{font-size:14px;margin:0 0 6px;color:#2c5f54}
+  .card .note{font-size:11px;color:#8a847b;margin:0 0 8px;white-space:pre-wrap;word-break:break-all}
+  .row{display:flex;gap:8px}
+  button{
+    flex:1;padding:10px;border:none;border-radius:8px;font-size:13px;
+    font-weight:700;font-family:inherit;cursor:pointer;
+  }
+  .btn-html{background:#3a7d6e;color:#fff}
+  .btn-plain{background:#c46a4a;color:#fff}
+  .result{font-size:12px;text-align:center;min-height:16px;margin-top:6px;font-weight:600;color:#2c5f54}
+  .num{
+    display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;
+    background:#3a7d6e;color:#fff;border-radius:50%;font-size:11px;margin-right:6px;
+  }
+</style>
+</head>
+<body>
+  <h1>note貼り付け診断ツール</h1>
+  <p class="lead">各カードの2つのボタンを片方ずつコピー→noteアプリの本文欄に貼り付け→どう見えたかスクショで記録。緑＝HTML版／橙＝プレーンnote記法版。全部で6テストあります。</p>
+
+  <div class="card">
+    <h2><span class="num">1</span>太字</h2>
+    <p class="note">HTML: &lt;p&gt;ここは&lt;strong&gt;太字&lt;/strong&gt;です&lt;/p&gt;
+プレーン: ここは**太字**です</p>
+    <div class="row">
+      <button class="btn-html" data-html="<p>ここは<strong>太字</strong>です</p>" data-plain="ここは**太字**です">HTML版</button>
+      <button class="btn-plain" data-plainonly="ここは**太字**です">プレーン版</button>
+    </div>
+    <div class="result"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>見出し(h2)</h2>
+    <p class="note">HTML: &lt;h2&gt;見出しテスト&lt;/h2&gt;
+プレーン: ## 見出しテスト</p>
+    <div class="row">
+      <button class="btn-html" data-html="<h2>見出しテスト</h2>" data-plain="## 見出しテスト">HTML版</button>
+      <button class="btn-plain" data-plainonly="## 見出しテスト">プレーン版</button>
+    </div>
+    <div class="result"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>箇条書き</h2>
+    <p class="note">HTML: &lt;ul&gt;&lt;li&gt;いち&lt;/li&gt;&lt;li&gt;に&lt;/li&gt;&lt;/ul&gt;
+プレーン: - いち\n- に</p>
+    <div class="row">
+      <button class="btn-html" data-html="<ul><li>いち</li><li>に</li></ul>" data-plain="- いち&#10;- に">HTML版</button>
+      <button class="btn-plain" data-plainonly="- いち&#10;- に">プレーン版</button>
+    </div>
+    <div class="result"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>引用</h2>
+    <p class="note">HTML: &lt;blockquote&gt;引用文です&lt;/blockquote&gt;
+プレーン: &gt; 引用文です</p>
+    <div class="row">
+      <button class="btn-html" data-html="<blockquote>引用文です</blockquote>" data-plain="&gt; 引用文です">HTML版</button>
+      <button class="btn-plain" data-plainonly="&gt; 引用文です">プレーン版</button>
+    </div>
+    <div class="result"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span>リンク</h2>
+    <p class="note">HTML: &lt;p&gt;&lt;a href="https://example.com"&gt;リンクです&lt;/a&gt;&lt;/p&gt;
+プレーン: [リンクです](https://example.com)</p>
+    <div class="row">
+      <button class="btn-html" data-html='<p><a href="https://example.com">リンクです</a></p>' data-plain="[リンクです](https://example.com)">HTML版</button>
+      <button class="btn-plain" data-plainonly="[リンクです](https://example.com)">プレーン版</button>
+    </div>
+    <div class="result"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span>段落間の空行（詰め方比較）</h2>
+    <p class="note">A: 1行の文章5つを&lt;p&gt;で別ブロックに（HTML）
+B: 同じ内容をプレーンで、空行1つ区切り
+C: 同じ内容をプレーンで、空行なし（改行のみ）</p>
+    <div class="row">
+      <button class="btn-html" style="flex:1 1 100%" data-html="<p>いちぎょうめ</p><p>にぎょうめ</p><p>さんぎょうめ</p>" data-plain="いちぎょうめ&#10;&#10;にぎょうめ&#10;&#10;さんぎょうめ">A: HTML(pタグ)</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn-plain" data-plainonly="いちぎょうめ&#10;&#10;にぎょうめ&#10;&#10;さんぎょうめ">B: プレーン(空行区切り)</button>
+      <button class="btn-plain" data-plainonly="いちぎょうめ&#10;にぎょうめ&#10;さんぎょうめ">C: プレーン(改行のみ)</button>
+    </div>
+    <div class="result"></div>
+  </div>
+
+<script>
+document.querySelectorAll('.btn-html').forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    const html = btn.dataset.html;
+    const plain = btn.dataset.plain;
+    const resultEl = btn.closest('.card').querySelector('.result');
+    try{
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], {type:'text/html'}),
+          'text/plain': new Blob([plain], {type:'text/plain'})
+        })
+      ]);
+      resultEl.textContent = 'HTML版コピー完了。noteに貼ってみて';
+    }catch(e){
+      resultEl.textContent = '失敗: ' + e.message;
+    }
+  });
+});
+document.querySelectorAll('.btn-plain').forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    const plain = btn.dataset.plainonly;
+    const resultEl = btn.closest('.card').querySelector('.result');
+    try{
+      await navigator.clipboard.writeText(plain);
+      resultEl.textContent = 'プレーン版コピー完了。noteに貼ってみて';
+    }catch(e){
+      resultEl.textContent = '失敗: ' + e.message;
+    }
+  });
+});
+</script>
+</body>
+</html>
