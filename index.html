@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>note貼り付け整形</title>
+<style>
+  :root{
+    --ink:#2b2a28;
+    --paper:#faf8f4;
+    --line:#e4ded4;
+    --accent:#3a7d6e;      /* note貼り付けの「整う」を落ち着いた緑で */
+    --accent-ink:#2c5f54;
+    --sub:#8a847b;
+    --warn:#c46a4a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+    line-height:1.7;padding:20px 16px 64px;max-width:680px;margin:0 auto;
+  }
+  h1{font-size:19px;margin:0 0 4px;letter-spacing:.02em}
+  .lead{font-size:13px;color:var(--sub);margin:0 0 20px}
+  label{display:block;font-size:13px;font-weight:600;margin:18px 0 8px;color:var(--accent-ink)}
+  textarea{
+    width:100%;min-height:220px;padding:14px;border:1px solid var(--line);
+    border-radius:12px;background:#fff;font-size:15px;line-height:1.7;
+    font-family:inherit;resize:vertical;color:var(--ink);
+  }
+  textarea:focus{outline:none;border-color:var(--accent)}
+  .btns{display:flex;gap:10px;margin:16px 0}
+  button{
+    flex:1;padding:14px;border:none;border-radius:12px;font-size:15px;
+    font-weight:700;font-family:inherit;cursor:pointer;transition:transform .05s;
+  }
+  button:active{transform:scale(.98)}
+  .copy{background:var(--accent);color:#fff}
+  .clear{background:#fff;color:var(--sub);border:1px solid var(--line);flex:0 0 88px}
+  .status{font-size:13px;text-align:center;min-height:20px;margin:-4px 0 8px;color:var(--accent-ink);font-weight:600}
+  .preview-wrap{margin-top:8px}
+  .preview{
+    border:1px solid var(--line);border-radius:12px;background:#fff;
+    padding:18px 16px;font-size:15px;
+  }
+  /* プレビューはnoteでの見え方に寄せる（段落間だけ余白、文内は詰める） */
+  .preview h2{font-size:19px;margin:20px 0 8px;font-weight:700}
+  .preview h3{font-size:16px;margin:16px 0 6px;font-weight:700}
+  .preview p{margin:0 0 14px}
+  .preview ul,.preview ol{margin:0 0 14px;padding-left:1.4em}
+  .preview li{margin:2px 0}
+  .preview blockquote{
+    margin:0 0 14px;padding:2px 0 2px 14px;border-left:3px solid var(--line);color:var(--sub);
+  }
+  .preview a{color:var(--accent-ink);text-decoration:underline}
+  .preview .embed{
+    display:block;margin:0 0 14px;padding:10px 12px;border:1px dashed var(--warn);
+    border-radius:8px;font-size:13px;color:var(--warn);word-break:break-all;
+  }
+  .preview :first-child{margin-top:0}
+  .preview :last-child{margin-bottom:0}
+  details{margin-top:22px;font-size:13px;color:var(--sub)}
+  summary{cursor:pointer;font-weight:600;color:var(--accent-ink)}
+  details code{background:#efeae1;padding:1px 5px;border-radius:4px;font-size:12px}
+  details li{margin:4px 0}
+</style>
+</head>
+<body>
+  <h1>note貼り付け整形</h1>
+  <p class="lead">記法つきの下書きを貼って「コピー」→ noteに貼る。見出し・太字・リスト・引用・リンクが崩れず、余計な空行も出さない。</p>
+
+  <label for="src">下書き（記法つき）</label>
+  <textarea id="src" placeholder="## 見出し&#10;&#10;ふつうの文章。&#10;句点で改行してOK。&#10;&#10;- 箇条書き&#10;- ふたつめ&#10;&#10;&gt; 引用したい一文&#10;&#10;**太字**や [リンク](https://example.com) も使える。"></textarea>
+
+  <div class="btns">
+    <button class="copy" id="copyBtn">コピー</button>
+    <button class="clear" id="clearBtn">クリア</button>
+  </div>
+  <div class="status" id="status"></div>
+
+  <div class="preview-wrap">
+    <label>プレビュー（noteでの見え方の目安）</label>
+    <div class="preview" id="preview"></div>
+  </div>
+
+  <details>
+    <summary>記法の早見表</summary>
+    <ul>
+      <li><code>## </code> 見出し（大） / <code>### </code> 見出し（小）</li>
+      <li><code>- </code> か <code>・</code> で箇条書き / <code>1. </code> で番号つき</li>
+      <li><code>&gt; </code> で引用</li>
+      <li><code>**太字**</code></li>
+      <li><code>[表示テキスト](URL)</code> でリンク</li>
+      <li><code>【埋め込み】URL</code> … 埋め込みたい場所の目印。noteでこのURLだけ別行に貼るとカードになる（ここは手動）</li>
+      <li>ふつうの改行＝行内改行（詰まる） / 空行＝段落の区切り（余白が入る）</li>
+    </ul>
+  </details>
+
+<script>
+/* ============================================================
+   note貼り付け整形ツール ─ 変換ロジック
+   狙い：
+   - 見出し/太字/リスト/引用/リンクを崩さずHTMLでクリップボードに書き込む
+   - 段落間だけ余白、文内の改行は詰める（例の「絶妙な隙間」を出さない）
+   - 出力HTMLはブロックタグ間に空白・改行を入れない（余計な余白の元を断つ）
+   ============================================================ */
+
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* インライン（太字・リンク）を処理。escした後に適用する */
+function inline(text){
+  let t = esc(text);
+  // [表示](URL)
+  t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_,label,url)=>`<a href="${url}">${label}</a>`);
+  // **太字**
+  t = t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  return t;
+}
+
+/* 下書きテキスト → note向けHTML文字列 */
+function toHtml(src){
+  const lines = src.replace(/\r\n?/g,'\n').split('\n');
+  const blocks = [];   // {type, lines:[]}
+  let cur = null;
+
+  const flush = ()=>{ if(cur){ blocks.push(cur); cur=null; } };
+
+  for(let raw of lines){
+    const line = raw.replace(/\s+$/,'');      // 行末空白だけ落とす
+    if(line.trim()===''){ flush(); continue; } // 空行＝区切り
+
+    // 見出しは単独ブロック
+    let m;
+    if(m = line.match(/^###\s+(.*)$/)){ flush(); blocks.push({type:'h3',lines:[m[1]]}); continue; }
+    if(m = line.match(/^##\s+(.*)$/)){ flush(); blocks.push({type:'h2',lines:[m[1]]}); continue; }
+
+    // 埋め込み目印は単独ブロック（そのまま残す）
+    if(m = line.match(/^【埋め込み】\s*(\S+)/)){ flush(); blocks.push({type:'embed',lines:[m[1]]}); continue; }
+
+    // 引用
+    if(m = line.match(/^[>＞]\s?(.*)$/)){
+      if(!cur || cur.type!=='quote'){ flush(); cur={type:'quote',lines:[]}; }
+      cur.lines.push(m[1]); continue;
+    }
+    // 番号つきリスト
+    if(m = line.match(/^\d+[.\．]\s+(.*)$/)){
+      if(!cur || cur.type!=='ol'){ flush(); cur={type:'ol',lines:[]}; }
+      cur.lines.push(m[1]); continue;
+    }
+    // 箇条書き
+    if(m = line.match(/^[-*・]\s+(.*)$/)){
+      if(!cur || cur.type!=='ul'){ flush(); cur={type:'ul',lines:[]}; }
+      cur.lines.push(m[1]); continue;
+    }
+    // ふつうの段落（連続行は同じ段落にまとめる）
+    if(!cur || cur.type!=='p'){ flush(); cur={type:'p',lines:[]}; }
+    cur.lines.push(line);
+  }
+  flush();
+
+  // ブロック→HTML。タグ間に改行・空白を入れない
+  return blocks.map(b=>{
+    switch(b.type){
+      case 'h2': return `<h2>${inline(b.lines[0])}</h2>`;
+      case 'h3': return `<h3>${inline(b.lines[0])}</h3>`;
+      case 'embed': return `<p class="embed">${esc(b.lines[0])}</p>`;
+      case 'ul': return `<ul>${b.lines.map(l=>`<li>${inline(l)}</li>`).join('')}</ul>`;
+      case 'ol': return `<ol>${b.lines.map(l=>`<li>${inline(l)}</li>`).join('')}</ol>`;
+      case 'quote': return `<blockquote>${b.lines.map(inline).join('<br>')}</blockquote>`;
+      // 段落：文内改行は<br>で詰め、段落の区切りは<p>の余白に任せる
+      case 'p': return `<p>${b.lines.map(inline).join('<br>')}</p>`;
+    }
+  }).join('');
+}
+
+const srcEl = document.getElementById('src');
+const preview = document.getElementById('preview');
+const status = document.getElementById('status');
+
+function render(){
+  const html = toHtml(srcEl.value);
+  preview.innerHTML = html || '<p style="color:#b8b2a8">ここに見え方が出ます</p>';
+}
+srcEl.addEventListener('input', render);
+
+/* コピー：text/html と text/plain の両方を書き込む */
+document.getElementById('copyBtn').addEventListener('click', async ()=>{
+  const html = toHtml(srcEl.value);
+  if(!html){ show('下書きが空です', true); return; }
+  const plain = srcEl.value;
+  try{
+    if(navigator.clipboard && window.ClipboardItem){
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], {type:'text/html'}),
+          'text/plain': new Blob([plain], {type:'text/plain'})
+        })
+      ]);
+      show('コピーしました。noteに貼ってね');
+    }else{
+      throw new Error('no clipboard api');
+    }
+  }catch(e){
+    // フォールバック：プレーンだけでもコピー
+    try{
+      await navigator.clipboard.writeText(plain);
+      show('プレーンでコピー（HTML非対応の環境）', true);
+    }catch(_){
+      show('コピーできませんでした', true);
+    }
+  }
+});
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  srcEl.value=''; render(); srcEl.focus();
+});
+
+let stTimer;
+function show(msg, warn){
+  status.textContent = msg;
+  status.style.color = warn ? 'var(--warn)' : 'var(--accent-ink)';
+  clearTimeout(stTimer);
+  stTimer = setTimeout(()=>{ status.textContent=''; }, 2600);
+}
+
+render();
+</script>
+</body>
+</html>
