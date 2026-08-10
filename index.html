@@ -37,6 +37,11 @@
   button:active{transform:scale(.98)}
   .copy{background:var(--accent);color:#fff}
   .clear{background:#fff;color:var(--sub);border:1px solid var(--line);flex:0 0 88px}
+  .sample{
+    display:block;width:100%;background:#fff;color:var(--accent-ink);
+    border:1px dashed var(--line);padding:10px;font-size:13px;font-weight:600;
+    border-radius:10px;cursor:pointer;font-family:inherit;
+  }
   .status{font-size:13px;text-align:center;min-height:20px;margin:-4px 0 8px;color:var(--accent-ink);font-weight:600}
   .preview-wrap{margin-top:8px}
   .preview{
@@ -76,6 +81,7 @@
     <button class="copy" id="copyBtn">コピー</button>
     <button class="clear" id="clearBtn">クリア</button>
   </div>
+  <button class="sample" id="sampleBtn">サンプル文章を試す</button>
   <div class="status" id="status"></div>
 
   <div class="preview-wrap">
@@ -200,6 +206,24 @@ document.getElementById('copyBtn').addEventListener('click', async ()=>{
 
 document.getElementById('clearBtn').addEventListener('click', ()=>{
   srcEl.value=''; render(); srcEl.focus();
+});
+
+const SAMPLE = `## スマホだけで記事が仕上がる話
+
+これはテスト用の文章。
+句点で改行してる。
+ここが詰まって見えれば成功。
+
+- 箇条書きのひとつめ
+- **太字が混ざってる**やつ
+- みっつめ
+
+> 引用の一文はこんな感じ
+
+詳しくは[note公式サイト](https://note.com)を見てね。`;
+
+document.getElementById('sampleBtn').addEventListener('click', ()=>{
+  srcEl.value = SAMPLE; render(); srcEl.focus();
 });
 
 let stTimer;
