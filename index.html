@@ -184,31 +184,17 @@ function render(){
 }
 srcEl.addEventListener('input', render);
 
-/* コピー：text/html と text/plain の両方を書き込む */
+/* コピー：note純正のマークダウン変換に読ませるため、記法つきのプレーンテキストで書き込む。
+   text/htmlは書き込まない（note公式アプリは自前のHTMLタグを認識せず、見出し/引用が
+   崩れることを実機検証で確認済み。実機での効果はプレビューでなくnote自身の変換に委ねる） */
 document.getElementById('copyBtn').addEventListener('click', async ()=>{
-  const html = toHtml(srcEl.value);
-  if(!html){ show('下書きが空です', true); return; }
   const plain = srcEl.value;
+  if(!plain.trim()){ show('下書きが空です', true); return; }
   try{
-    if(navigator.clipboard && window.ClipboardItem){
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/html': new Blob([html], {type:'text/html'}),
-          'text/plain': new Blob([plain], {type:'text/plain'})
-        })
-      ]);
-      show('コピーしました。noteに貼ってね');
-    }else{
-      throw new Error('no clipboard api');
-    }
+    await navigator.clipboard.writeText(plain);
+    show('コピーしました。noteに貼ってね');
   }catch(e){
-    // フォールバック：プレーンだけでもコピー
-    try{
-      await navigator.clipboard.writeText(plain);
-      show('プレーンでコピー（HTML非対応の環境）', true);
-    }catch(_){
-      show('コピーできませんでした', true);
-    }
+    show('コピーできませんでした', true);
   }
 });
 
